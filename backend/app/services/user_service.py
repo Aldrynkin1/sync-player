@@ -15,7 +15,7 @@ class UserService:
         self.room_serv = RoomService(db)
         
     def join_to_room(self, room_id: int, user_id: int):
-        room = self.room_serv.get_room(room_id)
+        room = self.room_serv.get_room_by_id(room_id)
         
         if not room:
             raise HTTPException(status_code=404, detail='Room not found')

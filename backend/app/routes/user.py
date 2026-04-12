@@ -25,3 +25,8 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db)) -> None:
     serv = UserService(db)
     
     return serv.create_user(user_data)
+
+@rout.post('/join/{user_id}')
+def join_to_room(user_id, room_id, db: Session = Depends(get_db)):
+    serv = UserService(db)
+    return serv.join_to_room(room_id, user_id)
