@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-from app.models.association import room_members
+from app.models.association import RoomMember
 
 class User(Base):
     __tablename__ = 'users'
@@ -14,8 +14,9 @@ class User(Base):
     avatar = Column(String)
     in_room_name = Column(String)
     hashed_password = Column(String)
+    role = Column(String, default='guest')
     
-    current_rooms = relationship('Room', secondary=room_members, back_populates='members')
+    current_rooms = relationship('Room', secondary=RoomMember, back_populates='members')
     
     owned_rooms = relationship('Room', back_populates='owner', cascade='all, delete-orphan')
     

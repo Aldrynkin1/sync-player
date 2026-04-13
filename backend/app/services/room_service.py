@@ -14,8 +14,8 @@ class RoomService:
         self.user_repo = UserRepository(db)
 
 
-    def create_room(self, room_data: RoomCreate) -> RoomResponse:
-        room = self.repo.create_room(room_data)
+    def create_room(self, room_data: RoomCreate, owner_id: int) -> RoomResponse:
+        room = self.repo.create_room(room_data, owner_id)
         return RoomResponse.model_validate(room)
 
     def get_room_by_id(self, room_id: int) -> RoomResponse:
@@ -45,14 +45,28 @@ class RoomService:
         if not room or not user:
             return None
         
+        if user_id != room.owner_id:
+            raise HTTPException(status_code=404, detail='Only owner can add users to room')
+        
         if user not in room.members:
             room.members.append(user)
             self.db.commit()
             self.db.refresh(room)
 
-        return room
+        return RoomResponse.model_validate(room)
     
     def get_all_rooms(self) -> List[RoomResponse]:
         rooms = self.repo.get_all_rooms()
         
         return [RoomResponse.model_validate(room) for room in rooms]
+    
+    def delete_room(self, room_id: int, user_id: int):
+        room = self.repo.get_room_by_id(room_id)
+
+        if not room:
+            raise HTTPException(status_code=404, detail='Room not found')
+        
+        if room.owner_id != user_id:
+            raise HTTPException(status_code=403, detail='Only owner can delete room')
+
+        return self.repo.delete_room(room_id)

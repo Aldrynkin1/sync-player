@@ -1,9 +1,8 @@
-from sqlalchemy import Table, Column, ForeignKey
+from sqlalchemy import Table, Column, ForeignKey, String
 from app.core.database import Base
 
-room_members = Table(
-    'room_members',
-    Base.metadata,
-    Column('user_id', ForeignKey('users.id'), primary_key=True),
-    Column('room_id', ForeignKey('rooms.id'), primary_key=True)
-)
+class RoomMember(Base):
+    __tablename__ = 'room_members'
+    user_id = Column(ForeignKey('users.id'), primary_key=True)
+    room_id = Column(ForeignKey('rooms.id'), primary_key=True)
+    role = Column(String, default="guest") 

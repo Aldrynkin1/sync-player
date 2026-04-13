@@ -26,7 +26,7 @@ class UserService:
             raise HTTPException(status_code=404, detail='User not found')
         
         self.room_serv.add_user_to_room(room_id, user)
-        return {'detail': f'User {user.username} added to room'}
+        return {'detail': f'User {user.username} added to room {room_id}'}
     
     def get_all_users(self) -> List[User]:
         users = self.repo.get_all_users()
@@ -35,3 +35,10 @@ class UserService:
     
     def create_user(self, user_data: UserCreate) -> User:
         return self.repo.create_user(user_data)
+    
+    def get_user_by_id(self, user_id: int):
+        repo = self.repo.get_user_by_id(user_id)
+        return repo
+    
+    def delete_user(self, user_id: int):
+        return self.repo.delete_user(user_id)

@@ -17,7 +17,7 @@ class RoomRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_room(self, room_data: RoomCreate) -> Room:
+    def create_room(self, room_data: RoomCreate, owner_id: int) -> Room:
         data = room_data.model_dump()
         password = data.pop("password", None) # Безопасно извлекаем пароль
 
@@ -32,7 +32,8 @@ class RoomRepository:
             slug=slug,
             hashed_password=hash_password(password) if password else None,
             current_time=0.0,
-            is_playing=False
+            is_playing=False,
+            owner_id = owner_id,
         )
 
         self.db.add(db_room)
@@ -45,3 +46,13 @@ class RoomRepository:
     
     def get_all_rooms(self):
         return self.db.query(Room).all()
+    
+    def delete_room(self, room_id: int) -> bool:
+        room = self.db.query(Room).filter(Room.id == room_id).first()
+
+        if not room:
+            return False
+        
+        self.db.delete(room)
+        self.db.commit()
+        return True

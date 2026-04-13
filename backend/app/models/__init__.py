@@ -1,5 +1,5 @@
 from .room import Room
-from .association import room_members
+from .association import RoomMember
 from .user import User
 
-__all__ = ['User', 'Room', 'room_members']
+__all__ = ['User', 'Room', 'RoomMember']

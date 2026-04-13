@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Text, Integer, Float, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-from app.models.association import room_members
+from app.models.association import RoomMember
 
 class Room(Base):
     __tablename__ = 'rooms'
@@ -18,7 +18,7 @@ class Room(Base):
     owner_id = Column(Integer, ForeignKey('users.id'))
     owner = relationship('User', back_populates='owned_rooms')
     
-    members = relationship('User', secondary=room_members, back_populates='current_rooms')
+    members = relationship('User', secondary=RoomMember, back_populates='current_rooms')
 
     def __repr__(self):
         return f'Room with owner {self.owner} and name {self.name}'

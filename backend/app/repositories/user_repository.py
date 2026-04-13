@@ -3,6 +3,7 @@ from typing import Optional
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.core.auth import hash_password
+from fastapi import HTTPException
 
 class UserRepository:
     def __init__(self, db: Session):
@@ -19,8 +20,21 @@ class UserRepository:
         self.db.refresh(db_user)
         return db_user
     
-    def get_user_by_id(self, user_id: int) -> Optional[User]:
-        return self.db.query(User).filter(User.id == user_id).first()
+    def get_user_by_id(self, user_id: int) -> User:
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail='User not found')
+        return user
     
     def get_all_users(self):
         return self.db.query(User).all()
+    
+    def delete_user(self, user_id: int) -> bool:
+        user = self.db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return False
+        
+        self.db.delete(user)
+        self.db.commit()
+        return True
