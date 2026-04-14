@@ -4,7 +4,7 @@ from app.repositories.room_repository import RoomRepository
 from app.schemas.room import RoomCreate, RoomResponse
 from typing import List
 from app.schemas.room_members import RoomMemberResponse
-from app.models import User, Room
+from app.models.room import Room
 from app.repositories.user_repository import UserRepository
 
 class RoomService:
@@ -70,3 +70,28 @@ class RoomService:
             raise HTTPException(status_code=403, detail='Only owner can delete room')
 
         return self.repo.delete_room(room_id)
+    
+    def update_room_state(self, room_id: int, time: float, is_playing: bool):
+        room = self.repo.get_room_by_id(room_id)
+        
+        if room:
+            room.current_time = time
+            room.is_playing = is_playing
+            self.db.commit()
+            self.db.refresh(room)
+        return room
+    
+    def new_video(self, room_id: int, video_url: str, user_id: int):
+        room = self.repo.get_room_by_id(room_id)
+
+        if not room:
+            return False
+        
+        if user_id != room.owner_id:
+            raise HTTPException(status_code=401, detail='Only owner can change video')
+        
+        if room:
+            room.video_url = video_url
+            self.db.commit()
+
+        return room

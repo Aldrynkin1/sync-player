@@ -16,7 +16,7 @@ class User(Base):
     hashed_password = Column(String)
     role = Column(String, default='guest')
     
-    current_rooms = relationship('Room', secondary=RoomMember, back_populates='members')
+    current_rooms = relationship('Room', secondary=RoomMember.__table__, back_populates='members')
     
     owned_rooms = relationship('Room', back_populates='owner', cascade='all, delete-orphan')
     

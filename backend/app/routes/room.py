@@ -1,13 +1,13 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, WebSocket, WebSocketDisconnect  
 from app.models.user import User
 from app.schemas.room import RoomResponse, RoomCreate
-from typing import List
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.room_service import RoomService
-from app.services.user_service import UserService
 from fastapi import HTTPException
-from app.schemas.user import UserResponse
+from app.models.video_manager import manager
+from fastapi.concurrency import run_in_threadpool
+from app.core.auth import get_token_from_websocket
 
 
 rout = APIRouter(
@@ -15,11 +15,11 @@ rout = APIRouter(
     tags=['rooms']
 )
 
-@rout.get('/', response_model=List[RoomResponse], status_code=status.HTTP_200_OK)
+@rout.get('/',  status_code=status.HTTP_200_OK)
 def get_all_rooms(db: Session = Depends(get_db)):
     
     serv = RoomService(db)
-    rooms = serv.get_all_rooms()
+    rooms = serv.get_all_rooms()    
     return rooms
 
 @rout.post('/create', status_code=status.HTTP_200_OK)
@@ -49,9 +49,57 @@ def add_user_to_room(user_id: int, room_id: int, db: Session = Depends(get_db)):
 def delete_room(room_id: int, user_id: int, db: Session = Depends(get_db)):
     serv = RoomService(db)
     
-    if not serv.delete_room(room_id):
+    if not serv.delete_room(room_id, user_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Room not found')
     
     
 
     return {'status': 'success', 'message': 'Room deleted'}
+
+@rout.websocket('/ws/message/{room_id}')
+async def websocket_message(websocket: WebSocket, room_id: int, user_id: int, video_url: str):
+    await manager.connect(room_id, websocket)
+    db = next(get_db())
+    token = websocket.query_params.get('token')
+    serv = RoomService(db)
+    
+    #состояния при заходе нового пользователя в команту
+    room = await run_in_threadpool(serv.get_room_by_id, room_id)
+    await websocket.send_json({
+        'type': 'INITIAL_STATE',
+        'video_url': room.video_url,
+        'current_time': room.current_time,
+        'is_playing': room.is_playing,
+    })
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+
+            action_type = data.get('type')
+            current_time = data.get('time', 0.0)
+            user_id = data.get('user_id')
+            
+            
+            if user_id == room.owner_id:
+                if action_type in ['PLAY', 'PAUSE']:
+                    is_playing = (action_type == 'PLAY')
+                    #функция потом аргументы
+                    await run_in_threadpool(serv.update_room_state, room_id, current_time, is_playing)
+                    await manager.broadcast(room_id, {"type": action_type, "time": current_time})
+
+                elif action_type == 'SEEK':
+                    await run_in_threadpool(serv.update_room_state, room_id, current_time, True)
+                    await manager.broadcast(room_id, {'type': 'SEEK', 'time': current_time})
+
+                elif action_type == "CHANGE_VIDEO":
+                    await run_in_threadpool(serv.new_video, room_id, video_url, user_id)
+                    await manager.broadcast(room_id, {"type": "CHANGE_VIDEO", "video_url": video_url})
+            else:
+                raise HTTPException(status_code=401, detail="Only owner can use admin's functions")
+
+
+    except WebSocketDisconnect:
+        await manager.disconnect(room_id, websocket)
+    finally:
+        db.close()

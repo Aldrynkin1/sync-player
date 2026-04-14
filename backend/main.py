@@ -1,14 +1,22 @@
 from fastapi import FastAPI, WebSocket
 from app.routes import RoomRout, UserRout
 from app.core.database import init_db
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.on_event('startup')
 def kaka():
     init_db()
-
 
 @app.get("/")
 def root():

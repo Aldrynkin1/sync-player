@@ -82,3 +82,5 @@ shop.db
 .vscode
 celerybeat-schedule
 celerybeat-schedule-wal
+migrations
+alembic.ini
