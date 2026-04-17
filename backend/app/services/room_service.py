@@ -39,20 +39,16 @@ class RoomService:
     
     def add_user_to_room(self, room_id: int, user_id: int) -> Room:
         room = self.repo.get_room_by_id(room_id)
-        actual_id = user_id.id if hasattr(user_id, 'id') else user_id
-        user = self.user_repo.get_user_by_id(actual_id)
-
+        user = self.user_repo.get_user_by_id(user_id)
+        
         if not room or not user:
-            return None
-        
-        if user_id != room.owner_id:
-            raise HTTPException(status_code=404, detail='Only owner can add users to room')
-        
-        if user not in room.members:
+            raise HTTPException(status_code=404, detail='Room or user not found')
+
+        if not user in room.members:
             room.members.append(user)
             self.db.commit()
             self.db.refresh(room)
-
+        
         return RoomResponse.model_validate(room)
     
     def get_all_rooms(self) -> List[RoomResponse]:
@@ -60,14 +56,11 @@ class RoomService:
         
         return [RoomResponse.model_validate(room) for room in rooms]
     
-    def delete_room(self, room_id: int, user_id: int):
+    def delete_room(self, room_id: int):
         room = self.repo.get_room_by_id(room_id)
 
         if not room:
             raise HTTPException(status_code=404, detail='Room not found')
-        
-        if room.owner_id != user_id:
-            raise HTTPException(status_code=403, detail='Only owner can delete room')
 
         return self.repo.delete_room(room_id)
     
@@ -93,5 +86,13 @@ class RoomService:
         if room:
             room.video_url = video_url
             self.db.commit()
+
+        return room
+    
+    def get_room_by_name(self, room_name: str):
+        room = self.repo.get_room_by_name(room_name)
+
+        if not room:
+            raise HTTPException(status_code=404, detail='Room not found')
 
         return room

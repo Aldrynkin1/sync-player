@@ -69,3 +69,6 @@ class RoomRepository:
         room.video_url = video_url
         
         return room
+    
+    def get_room_by_name(self, room_name: str):
+        return self.db.query(Room).filter(Room.name == room_name).first()

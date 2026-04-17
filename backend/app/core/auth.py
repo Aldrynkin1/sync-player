@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.user import User
+from jose.exceptions import JWTError
 
 load_dotenv()
 
@@ -80,21 +81,3 @@ def get_current_user(
         raise credentials_exception
 
     return user
-
-async def get_token_from_websocket(
-    token: str = Query(None), 
-    db: Session = Depends(get_db)
-):
-    if token is None:
-        return None # Или выкини исключение, чтобы закрыть коннект
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            return None
-        
-        user = db.query(User).filter(User.id == int(user_id)).first()
-        return user
-    except Exception:
-        return None
