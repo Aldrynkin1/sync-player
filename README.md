@@ -135,7 +135,7 @@ Backend построен по слоистой архитектуре:
 ## Запуск backend
 
 ```bash
-cd backend
+cd backend/app
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
@@ -143,7 +143,7 @@ uvicorn main:app --reload
 ## Запуск frontend
 
 ```bash
-cd frontend
+cd frontend/kakain
 npm install
 npm run dev
 ```
